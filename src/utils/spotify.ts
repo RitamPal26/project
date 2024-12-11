@@ -1,5 +1,5 @@
 const CLIENT_ID = "7fc6ec5e058a46ecb4780157fce1520d";
-const REDIRECT_URI = "https://testrunmad.netlify.app/dashboard";
+const REDIRECT_URI = "https://testrunmad.netlify.app";
 const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize";
 const RESPONSE_TYPE = "token";
 const SCOPES = [
