@@ -66,9 +66,22 @@ export const getAccessToken = () => {
 
 // Handle logout and redirect to Spotify login page
 export const handleLogout = () => {
+  // Clear local storage
   localStorage.removeItem("spotify_access_token");
   localStorage.removeItem("spotify_token_expiration");
-  window.location.href = loginUrl; // Redirect to Spotify login page
+
+  // Redirect to Spotify's logout page, then back to the app's login page
+  const logoutWindow = window.open(
+    "https://accounts.spotify.com/en/logout",
+    "Spotify Logout",
+    "width=700,height=500,top=40,left=40"
+  );
+
+  // Delay redirect to the login page to ensure Spotify logout is complete
+  setTimeout(() => {
+    logoutWindow?.close(); // Close the Spotify logout window
+    window.location.href = loginUrl; // Redirect to the app's login page
+  }, 1000); // Adjust timeout as needed
 };
 
 // Fetch user's top items (artists or tracks)
