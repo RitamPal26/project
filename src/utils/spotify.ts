@@ -57,6 +57,6 @@ export const handleLogout = (): void => {
 
   // Optional: Redirect back to your app's login flow after logging out of Spotify
   setTimeout(() => {
-    window.location.href = "https://yourapp.com/login"; // Replace with your app's login route
+    window.location.href = "https://testrunmad.netlify.app/"; // Replace with your app's login route
   }, 1000); // Delay to ensure Spotify logout takes effect
 };
