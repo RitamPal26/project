@@ -19,6 +19,7 @@ import {
   getAccessToken,
   fetchTopItems,
   fetchRecentlyPlayed,
+  logout,
 } from "./utils/spotify";
 import type { SpotifyArtist, SpotifyTrack, PlayHistory } from "./types/spotify";
 
@@ -40,8 +41,7 @@ function Sidebar({
   setActiveView: (view: string) => void;
 }) {
   const handleLogout = () => {
-    localStorage.removeItem("spotify_access_token"); // Remove token
-    window.location.href = "/"; // Redirect to login page
+    logout(); // Call the logout function
   };
 
   return (

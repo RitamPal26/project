@@ -1,49 +1,63 @@
-const CLIENT_ID: string = "7fc6ec5e058a46ecb4780157fce1520d";
-const REDIRECT_URI: string = "https://testrunmad.netlify.app/";
-const AUTH_ENDPOINT: string = "https://accounts.spotify.com/authorize";
-const RESPONSE_TYPE: string = "token";
-const SCOPES: string = [
+const CLIENT_ID = "7fc6ec5e058a46ecb4780157fce1520d";
+const REDIRECT_URI = "http://localhost:5173";
+const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize";
+const RESPONSE_TYPE = "token";
+const SCOPES = [
   "user-top-read",
   "user-read-private",
   "user-read-email",
   "user-read-recently-played",
 ].join(" ");
 
-export const loginUrl = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=${RESPONSE_TYPE}&scope=${encodeURIComponent(SCOPES)}`;
+export const loginUrl = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(
+  REDIRECT_URI
+)}&response_type=${RESPONSE_TYPE}&scope=${encodeURIComponent(
+  SCOPES
+)}&show_dialog=true`;
 
 export const handleLogin = (): void => {
-  // Clear existing tokens for new users
+  // Always clear the previous session's token before login
   localStorage.removeItem("spotify_access_token");
   localStorage.removeItem("spotify_token_expiration");
 
-  // Redirect to Spotify login
-  window.location.href = loginUrl;
+  // Redirect to the Spotify login URL
+  window.location.href = loginUrl; // Ensure this URL is correctly formatted
 };
 
 export const getAccessToken = () => {
-  if (typeof window === 'undefined') return null;
-  
+  if (typeof window === "undefined") return null;
+
   const hash = window.location.hash;
-  if (!hash) {
-    const storedToken = localStorage.getItem('spotify_access_token');
-    if (storedToken) {
-      return storedToken;
+
+  if (hash) {
+    const token = hash
+      .substring(1)
+      .split("&")
+      .find((elem) => elem.startsWith("access_token"))
+      ?.split("=")[1];
+
+    if (token) {
+      const expiration = hash
+        .split("&")
+        .find((elem) => elem.startsWith("expires_in"))
+        ?.split("=")[1];
+
+      if (expiration) {
+        const expirationTime =
+          Math.floor(Date.now() / 1000) + parseInt(expiration, 10);
+        localStorage.setItem(
+          "spotify_token_expiration",
+          expirationTime.toString()
+        );
+      }
+
+      localStorage.setItem("spotify_access_token", token);
+      window.location.hash = ""; // Clear the hash from the URL
+      return token;
     }
-    return null;
   }
 
-  const token = hash
-    .substring(1)
-    .split("&")
-    .find(elem => elem.startsWith("access_token"))
-    ?.split("=")[1];
-
-  if (token) {
-    localStorage.setItem('spotify_access_token', token);
-    window.location.hash = '';
-  }
-
-  return token;
+  return localStorage.getItem("spotify_access_token");
 };
 
 export const fetchTopItems = async <T>(
@@ -99,5 +113,16 @@ export const fetchRecentlyPlayed = async (
   } catch (error) {
     console.error("Error fetching recently played:", error);
     throw error;
+  }
+};
+
+export const logout = (): void => {
+  const confirmLogout = window.confirm("Are you sure you want to log out?");
+  if (confirmLogout) {
+    localStorage.removeItem("spotify_access_token");
+    localStorage.removeItem("spotify_token_expiration");
+
+    // Redirect to a login page or display a login prompt
+    window.location.href = "/";
   }
 };
