@@ -1,7 +1,34 @@
+// Helper functions to generate code verifier and code challenge
+const generateCodeVerifier = () => {
+  const array = new Uint32Array(56);
+  window.crypto.getRandomValues(array);
+  return Array.from(array, (dec) => dec.toString(36)).join("");
+};
+
+const generateCodeChallenge = (codeVerifier: string) => {
+  return new Promise<string>((resolve, reject) => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(codeVerifier);
+    window.crypto.subtle
+      .digest("SHA-256", data)
+      .then((hash) => {
+        const base64Url = btoa(
+          String.fromCharCode.apply(null, new Uint8Array(hash))
+        )
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+        resolve(base64Url);
+      })
+      .catch(reject);
+  });
+};
+
+// Constants
 const CLIENT_ID = "7fc6ec5e058a46ecb4780157fce1520d";
 const REDIRECT_URI = "https://testrunmad.netlify.app/";
-const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize"; // Corrected Auth Endpoint
-const RESPONSE_TYPE = "token";
+const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize";
+const RESPONSE_TYPE = "code"; // Changed to 'code' for PKCE flow
 const SCOPES = [
   "user-top-read",
   "user-read-private",
@@ -9,22 +36,26 @@ const SCOPES = [
   "user-read-recently-played",
 ].join(" ");
 
-export const loginUrl = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(
-  REDIRECT_URI
-)}&response_type=${RESPONSE_TYPE}&scope=${encodeURIComponent(
-  SCOPES
-)}&show_dialog=true`;
-
+// Generate code verifier and code challenge, then construct login URL
 export const handleLogin = (): void => {
-  // Clear previous session's token
-  localStorage.removeItem("spotify_access_token");
-  localStorage.removeItem("spotify_token_expiration");
+  const codeVerifier = generateCodeVerifier();
+  generateCodeChallenge(codeVerifier).then((codeChallenge) => {
+    // Store the code verifier for the token exchange later
+    localStorage.setItem("code_verifier", codeVerifier);
 
-  console.log("Redirecting to Spotify login...");
-  // Redirect
-  window.location.href = loginUrl;
+    const loginUrl = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(
+      REDIRECT_URI
+    )}&response_type=${RESPONSE_TYPE}&scope=${encodeURIComponent(
+      SCOPES
+    )}&code_challenge=${codeChallenge}&code_challenge_method=S256&show_dialog=true`;
+
+    console.log("Redirecting to Spotify login...");
+    // Redirect user to Spotify login
+    window.location.href = loginUrl;
+  });
 };
 
+// Fetch access token from the URL after redirect
 export const getAccessToken = () => {
   if (typeof window === "undefined") return null;
 
@@ -61,6 +92,37 @@ export const getAccessToken = () => {
   return localStorage.getItem("spotify_access_token");
 };
 
+// Exchange the authorization code for an access token
+export const exchangeCodeForToken = (authorizationCode: string) => {
+  const codeVerifier = localStorage.getItem("code_verifier");
+  if (!codeVerifier) {
+    console.error("Code verifier is missing");
+    return;
+  }
+
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    code: authorizationCode,
+    redirect_uri: REDIRECT_URI,
+    client_id: CLIENT_ID,
+    code_verifier: codeVerifier,
+  });
+
+  fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    body,
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      localStorage.setItem("spotify_access_token", data.access_token);
+    })
+    .catch((error) => console.error("Error exchanging code for token:", error));
+};
+
+// Fetch top items (artists or tracks) from Spotify API
 export const fetchTopItems = async <T>(
   type: "artists" | "tracks",
   timeRange: "short_term" | "medium_term" | "long_term" = "medium_term",
@@ -68,7 +130,7 @@ export const fetchTopItems = async <T>(
 ): Promise<{ items: T[]; total: number; limit: number; offset: number }> => {
   try {
     const response = await fetch(
-      `https://api.spotify.com/v1/me/top/${type}?time_range=${timeRange}&limit=50`, // Corrected API endpoint
+      `https://api.spotify.com/v1/me/top/${type}?time_range=${timeRange}&limit=50`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -91,12 +153,13 @@ export const fetchTopItems = async <T>(
   }
 };
 
+// Fetch recently played tracks from Spotify API
 export const fetchRecentlyPlayed = async (
   token: string
 ): Promise<{ items: PlayHistory[] }> => {
   try {
     const response = await fetch(
-      "https://api.spotify.com/v1/me/player/recently-played", // Corrected API endpoint
+      "https://api.spotify.com/v1/me/player/recently-played",
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -117,6 +180,7 @@ export const fetchRecentlyPlayed = async (
   }
 };
 
+// Logout function
 export const logout = (): void => {
   const confirmLogout = window.confirm("Are you sure you want to log out?");
   if (confirmLogout) {
@@ -127,4 +191,3 @@ export const logout = (): void => {
     window.location.href = "/?logout=true";
   }
 };
-
