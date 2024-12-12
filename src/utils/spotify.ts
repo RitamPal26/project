@@ -9,11 +9,7 @@ const SCOPES: string = [
   "user-read-recently-played",
 ].join(" ");
 
-export const loginUrl: string = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(
-  REDIRECT_URI
-)}&response_type=${RESPONSE_TYPE}&scope=${encodeURIComponent(
-  SCOPES
-)}&show_dialog=true`;
+export const loginUrl = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=${RESPONSE_TYPE}&scope=${encodeURIComponent(SCOPES)}`;
 
 export const handleLogin = (): void => {
   // Clear existing tokens for new users
@@ -24,65 +20,30 @@ export const handleLogin = (): void => {
   window.location.href = loginUrl;
 };
 
-export const getAccessToken = (): string | null => {
-  if (typeof window === "undefined") return null;
-
-  const hash: string = window.location.hash;
-
-  // Check if the token exists in the URL fragment
-  if (hash) {
-    const token: string | undefined = hash
-      .substring(1)
-      .split("&")
-      .find((elem) => elem.startsWith("access_token"))
-      ?.split("=")[1];
-
-    const expiresIn: string | undefined = hash
-      .substring(1)
-      .split("&")
-      .find((elem) => elem.startsWith("expires_in"))
-      ?.split("=")[1];
-
-    if (token && expiresIn) {
-      const expirationTime: number = Date.now() + parseInt(expiresIn) * 1000;
-
-      // Store the token and expiration time
-      localStorage.setItem("spotify_access_token", token);
-      localStorage.setItem(
-        "spotify_token_expiration",
-        expirationTime.toString()
-      );
-
-      // Clear the URL fragment to prevent the token from being processed again
-      window.location.hash = "";
-      return token;
-    }
-  }
-
-  // Check if a valid token is already stored
-  const storedToken: string | null = localStorage.getItem(
-    "spotify_access_token"
-  );
-  const storedExpiration: string | null = localStorage.getItem(
-    "spotify_token_expiration"
-  );
-
-  if (storedToken && storedExpiration) {
-    const currentTime: number = Date.now();
-    if (currentTime < parseInt(storedExpiration)) {
-      // Return stored token if it's still valid
+export const getAccessToken = () => {
+  if (typeof window === 'undefined') return null;
+  
+  const hash = window.location.hash;
+  if (!hash) {
+    const storedToken = localStorage.getItem('spotify_access_token');
+    if (storedToken) {
       return storedToken;
-    } else {
-      // Token expired, remove and redirect to login
-      localStorage.removeItem("spotify_access_token");
-      localStorage.removeItem("spotify_token_expiration");
-      handleLogin(); // Redirect to login if the token has expired
     }
+    return null;
   }
 
-  // No token available, redirect to login
-  handleLogin();
-  return null;
+  const token = hash
+    .substring(1)
+    .split("&")
+    .find(elem => elem.startsWith("access_token"))
+    ?.split("=")[1];
+
+  if (token) {
+    localStorage.setItem('spotify_access_token', token);
+    window.location.hash = '';
+  }
+
+  return token;
 };
 
 export const fetchTopItems = async <T>(
