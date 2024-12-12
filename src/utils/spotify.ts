@@ -25,9 +25,14 @@ export const handleLogin = () => {
 };
 
 export const getAccessToken = () => {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined") {
+    console.error("Window object is undefined. Cannot retrieve token.");
+    return null;
+  }
 
   const hash = window.location.hash;
+
+  console.log("URL hash fragment:", hash);
 
   if (hash) {
     const token = hash
@@ -45,6 +50,9 @@ export const getAccessToken = () => {
     if (token && expiresIn) {
       const expirationTime = Date.now() + parseInt(expiresIn) * 1000;
 
+      console.log("Extracted token:", token);
+      console.log("Token expires in (ms):", expiresIn);
+
       // Store token and expiration time
       localStorage.setItem("spotify_access_token", token);
       localStorage.setItem(
@@ -54,6 +62,8 @@ export const getAccessToken = () => {
 
       window.location.hash = ""; // Clear the URL fragment
       return token;
+    } else {
+      console.error("Token or expiration time not found in hash.");
     }
   }
 
@@ -61,20 +71,28 @@ export const getAccessToken = () => {
   const storedToken = localStorage.getItem("spotify_access_token");
   const storedExpiration = localStorage.getItem("spotify_token_expiration");
 
+  console.log("Stored token:", storedToken);
+  console.log("Stored expiration:", storedExpiration);
+
   if (storedToken && storedExpiration) {
     const currentTime = Date.now();
+    console.log("Current time (ms):", currentTime);
     if (currentTime < parseInt(storedExpiration)) {
+      console.log("Stored token is valid.");
       return storedToken;
     } else {
-      // Token expired
+      console.log(
+        "Token expired, clearing localStorage and redirecting to login."
+      );
       localStorage.removeItem("spotify_access_token");
       localStorage.removeItem("spotify_token_expiration");
       handleLogin();
     }
+  } else {
+    console.log("No valid token found, redirecting to login.");
+    handleLogin();
   }
 
-  // No valid token, redirect to login
-  handleLogin();
   return null;
 };
 
