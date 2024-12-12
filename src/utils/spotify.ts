@@ -29,6 +29,7 @@ export const getAccessToken = () => {
 
   const hash = window.location.hash;
 
+  // Check if the token exists in the URL fragment
   if (hash) {
     const token = hash
       .substring(1)
@@ -45,35 +46,37 @@ export const getAccessToken = () => {
     if (token && expiresIn) {
       const expirationTime = Date.now() + parseInt(expiresIn) * 1000;
 
-      // Store token and expiration time
+      // Store the token and expiration time
       localStorage.setItem("spotify_access_token", token);
       localStorage.setItem(
         "spotify_token_expiration",
         expirationTime.toString()
       );
 
-      window.location.hash = ""; // Clear the URL fragment
+      // Clear the URL fragment to prevent the token from being processed again
+      window.location.hash = "";
       return token;
     }
   }
 
-  // Check stored token validity
+  // Check if a valid token is already stored
   const storedToken = localStorage.getItem("spotify_access_token");
   const storedExpiration = localStorage.getItem("spotify_token_expiration");
 
   if (storedToken && storedExpiration) {
     const currentTime = Date.now();
     if (currentTime < parseInt(storedExpiration)) {
+      // Return stored token if it's still valid
       return storedToken;
     } else {
-      // Token expired
+      // Token expired, remove and redirect to login
       localStorage.removeItem("spotify_access_token");
       localStorage.removeItem("spotify_token_expiration");
-      handleLogin();
+      handleLogin(); // Redirect to login if the token has expired
     }
   }
 
-  // No valid token, redirect to login
+  // No token available, redirect to login
   handleLogin();
   return null;
 };
