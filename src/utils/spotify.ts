@@ -1,21 +1,21 @@
-const CLIENT_ID = "7fc6ec5e058a46ecb4780157fce1520d";
-const REDIRECT_URI = "https://testrunmad.netlify.app/";
-const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize";
-const RESPONSE_TYPE = "token";
-const SCOPES = [
+const CLIENT_ID: string = "7fc6ec5e058a46ecb4780157fce1520d";
+const REDIRECT_URI: string = "https://testrunmad.netlify.app/";
+const AUTH_ENDPOINT: string = "https://accounts.spotify.com/authorize";
+const RESPONSE_TYPE: string = "token";
+const SCOPES: string = [
   "user-top-read",
   "user-read-private",
   "user-read-email",
   "user-read-recently-played",
 ].join(" ");
 
-export const loginUrl = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(
+export const loginUrl: string = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(
   REDIRECT_URI
 )}&response_type=${RESPONSE_TYPE}&scope=${encodeURIComponent(
   SCOPES
 )}&show_dialog=true`;
 
-export const handleLogin = () => {
+export const handleLogin = (): void => {
   // Clear existing tokens for new users
   localStorage.removeItem("spotify_access_token");
   localStorage.removeItem("spotify_token_expiration");
@@ -24,27 +24,27 @@ export const handleLogin = () => {
   window.location.href = loginUrl;
 };
 
-export const getAccessToken = () => {
+export const getAccessToken = (): string | null => {
   if (typeof window === "undefined") return null;
 
-  const hash = window.location.hash;
+  const hash: string = window.location.hash;
 
   // Check if the token exists in the URL fragment
   if (hash) {
-    const token = hash
+    const token: string | undefined = hash
       .substring(1)
       .split("&")
       .find((elem) => elem.startsWith("access_token"))
       ?.split("=")[1];
 
-    const expiresIn = hash
+    const expiresIn: string | undefined = hash
       .substring(1)
       .split("&")
       .find((elem) => elem.startsWith("expires_in"))
       ?.split("=")[1];
 
     if (token && expiresIn) {
-      const expirationTime = Date.now() + parseInt(expiresIn) * 1000;
+      const expirationTime: number = Date.now() + parseInt(expiresIn) * 1000;
 
       // Store the token and expiration time
       localStorage.setItem("spotify_access_token", token);
@@ -60,11 +60,15 @@ export const getAccessToken = () => {
   }
 
   // Check if a valid token is already stored
-  const storedToken = localStorage.getItem("spotify_access_token");
-  const storedExpiration = localStorage.getItem("spotify_token_expiration");
+  const storedToken: string | null = localStorage.getItem(
+    "spotify_access_token"
+  );
+  const storedExpiration: string | null = localStorage.getItem(
+    "spotify_token_expiration"
+  );
 
   if (storedToken && storedExpiration) {
-    const currentTime = Date.now();
+    const currentTime: number = Date.now();
     if (currentTime < parseInt(storedExpiration)) {
       // Return stored token if it's still valid
       return storedToken;
