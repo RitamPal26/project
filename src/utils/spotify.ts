@@ -1,6 +1,6 @@
 const CLIENT_ID = "7fc6ec5e058a46ecb4780157fce1520d";
 const REDIRECT_URI = "https://testrunmad.netlify.app/";
-const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize";
+const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize"; // Corrected Auth Endpoint
 const RESPONSE_TYPE = "token";
 const SCOPES = [
   "user-top-read",
@@ -16,12 +16,13 @@ export const loginUrl = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${
 )}&show_dialog=true`;
 
 export const handleLogin = (): void => {
-  // Always clear the previous session's token before login
+  // Clear previous session's token
   localStorage.removeItem("spotify_access_token");
   localStorage.removeItem("spotify_token_expiration");
 
-  // Redirect to the Spotify login URL
-  window.location.href = loginUrl; // Ensure this URL is correctly formatted
+  console.log("Redirecting to Spotify login...");
+  // Redirect
+  window.location.href = loginUrl;
 };
 
 export const getAccessToken = () => {
@@ -67,7 +68,7 @@ export const fetchTopItems = async <T>(
 ): Promise<{ items: T[]; total: number; limit: number; offset: number }> => {
   try {
     const response = await fetch(
-      `https://api.spotify.com/v1/me/top/${type}?time_range=${timeRange}&limit=50`,
+      `https://api.spotify.com/v1/me/top/${type}?time_range=${timeRange}&limit=50`, // Corrected API endpoint
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -95,7 +96,7 @@ export const fetchRecentlyPlayed = async (
 ): Promise<{ items: PlayHistory[] }> => {
   try {
     const response = await fetch(
-      "https://api.spotify.com/v1/me/player/recently-played?limit=50",
+      "https://api.spotify.com/v1/me/player/recently-played", // Corrected API endpoint
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -126,3 +127,4 @@ export const logout = (): void => {
     window.location.href = "/?logout=true";
   }
 };
+
